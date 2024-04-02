@@ -2,11 +2,9 @@ import torch
 import torch.nn as nn
 from transformers import BertModel
 from torchvision.models import resnet50
-from MultimodalContextualAttentionNetwork import MultimodalContextualAttention as mcan_model
-
 
 class HierarchicalEncodingNetwork(nn.Module):
-    def __init__(self, bert, resnet, output_dim, groups=3) -> None:
+    def __init__(self, mcan_model, bert, resnet, output_dim, groups=3) -> None:
         super().__init__(HierarchicalEncodingNetwork, self)
 
         self.bert = bert
