@@ -2,17 +2,15 @@ import torch
 import torch.nn as nn
 from transformers import BertModel
 from torchvision.models import resnet50
+from MultimodalContextualAttentionNetwork import MultimodalContextualAttention as mcan_model
 
 
 class HierarchicalEncodingNetwork(nn.Module):
-    def __init__(self, mcan_model, text_d_model, img_d_model, bert_output_layers=12, groups=3) -> None:
+    def __init__(self, bert, resnet, output_dim, groups=3) -> None:
         super().__init__(HierarchicalEncodingNetwork, self)
 
-        self.bert = BertModel.from_pretrained('bert-base-uncased', output_hidden_states=True)
-        
-        # Adapt ResNet for feature extraction to match the image embedding size
-        self.resnet = resnet50(pretrained=True)
-        self.resnet.fc = nn.Linear(self.resnet.fc.in_features, img_d_model)
+        self.bert = bert
+        self.resnet = resnet
         
         # Multimodal Contextual Attention Network model
         self.mcan = mcan_model
@@ -20,8 +18,9 @@ class HierarchicalEncodingNetwork(nn.Module):
         # Number of groups to split BERT layers
         self.layer_groups = groups
 
-        # Total number of BERT output layers
-        self.bert_output_layers = bert_output_layers
+        self.output_dim = output_dim
+
+        self.classifier = nn.Linear(output_dim*groups, 2)
 
 
     def forward(self, input_ids, attention_mask, images):
@@ -31,27 +30,22 @@ class HierarchicalEncodingNetwork(nn.Module):
         
         # Process image through ResNet
         img_features = self.resnet(images)
-        
-        # Initialize a list to hold MCAN outputs for each group
-        mcan_outputs = []
 
         # Group BERT layers' outputs and process each group with the image features through MCAN
-        layers_per_group = self.bert_output_layers // self.layer_groups
+        grouped_text_features = self._group_bert_outputs(hidden_states)
 
-        for i in range(self.layer_groups):
-            # Average the outputs of the layers in the current group
-            group_layers = hidden_states[i * layers_per_group : (i + 1) * layers_per_group]
-
-            group_avg = torch.mean(torch.stack(group_layers), dim=0)
-            
-            # Get the [CLS] token representation as the text feature
-            text_features = group_avg[:, 0, :]
-            
-            # Process through MCAN and collect the output
+        combined_outputs = []
+        
+        for text_features in grouped_text_features:
             mcan_output = self.mcan(text_features, img_features)
-            mcan_outputs.append(mcan_output)
-        
-        # Concatenate all MCAN outputs to form the final multimodal representation
-        combined_output = torch.cat(mcan_outputs, dim=-1)
-        
-        return combined_output
+            combined_outputs.append(mcan_output)
+
+        final_features = torch.cat(combined_outputs, dim=-1)
+        predictions = self.classifier(final_features)
+        return predictions
+    
+    def _group_bert_outputs(self, hidden_states):
+        # Simplified grouping strategy
+        step = len(hidden_states) // self.groups
+
+        return [torch.mean(torch.stack(hidden_states[i*step:(i+1)*step]), dim=0) for i in range(self.groups)]
