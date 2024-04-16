@@ -4,8 +4,9 @@ from transformers import BertModel
 from torchvision.models import resnet50
 
 class HierarchicalEncodingNetwork(nn.Module):
+
     def __init__(self, mcan_model, bert, resnet, output_dim, groups=3) -> None:
-        super().__init__(HierarchicalEncodingNetwork, self)
+        super(HierarchicalEncodingNetwork, self).__init__()
 
         self.bert = bert
         self.resnet = resnet
@@ -44,6 +45,6 @@ class HierarchicalEncodingNetwork(nn.Module):
     
     def _group_bert_outputs(self, hidden_states):
         # Simplified grouping strategy
-        step = len(hidden_states) // self.groups
+        step = len(hidden_states) // self.layer_groups
 
-        return [torch.mean(torch.stack(hidden_states[i*step:(i+1)*step]), dim=0) for i in range(self.groups)]
+        return [torch.mean(torch.stack(hidden_states[i*step:(i+1)*step]), dim=0) for i in range(self.layer_groups)]

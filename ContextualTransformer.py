@@ -33,7 +33,7 @@ class ContextualTransformer(nn.Module):
         f_single_pooled = self.pooling1(f_single)
 
         # pass f_single and input2 through Cross attention layer
-        f_co = self.cross_attn(f_single.unsqueeze(1), input2, input2)
+        f_co = self.cross_attn(input2, f_single.unsqueeze(1), f_single.unsqueeze(1))
 
         # pool f_co
         f_co_pooled = self.pooling2(f_co)
