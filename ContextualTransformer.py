@@ -73,13 +73,27 @@ class ContextualTransformer(nn.Module):
         input1_encoded = self.encoder_layer(input1)
 
         # Padding input2 to match the sequence length of input1
-        if input2.size(1) < input1.size(1):
-            padding_size = input1.size(1) - input2.size(1)
+        # if input2.size(1) < input1.size(1):
+        #     padding_size = input1.size(1) - input2.size(1)
+        #     input2 = F.pad(input2, (0, 0, 0, padding_size))
+
+        # # Create a mask for input2
+        # input2_pad_mask = input2.sum(dim=-1) == 0  # Padding mask
+
+        # cross_attn_output = self.cross_attn(input2, input1_encoded, input1_encoded, key_padding_mask=input2_pad_mask).permute(1, 0, 2)
+
+        # Create a mask for the original input2 length to match input1_encoded
+        if input2.size(1) > input1_encoded.size(1):
+            input2 = input2[:, :input1_encoded.size(1), :]  # Truncate input2 to match input1_encoded length
+            input2_pad_mask = None  # No padding needed if input2 is truncated
+        else:
+            # Pad input2 if necessary and create a mask
+            padding_size = input1_encoded.size(1) - input2.size(1)
             input2 = F.pad(input2, (0, 0, 0, padding_size))
+            input2_pad_mask = torch.cat([torch.zeros((input2.size(0), input2.size(1) - padding_size), dtype=torch.bool, device=input2.device),
+                                         torch.ones((input2.size(0), padding_size), dtype=torch.bool, device=input2.device)], dim=1)
 
-        # Create a mask for input2
-        input2_pad_mask = input2.sum(dim=-1) == 0  # Padding mask
-
+        # Cross-attention operation
         cross_attn_output = self.cross_attn(input2, input1_encoded, input1_encoded, key_padding_mask=input2_pad_mask).permute(1, 0, 2)
 
         print(f'Input1 after encoding: {input1_encoded.shape}')
