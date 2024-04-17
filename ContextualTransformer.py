@@ -26,14 +26,22 @@ class ContextualTransformer(nn.Module):
 
     def forward(self, input1, input2):
 
+        print('Inside Contextual transformer')
+        print(f'Input1: {input1.shape}')
+        print(f'Input2: {input2.shape}')
+        print('Entering encoder...\n')
         # pass input 1 through encoder
         f_single = self.encoder_layer(input1)
-
+        
+        print(f'After encoder, output: {f_single.shape}')
+        print('Pushing fsingle into Pooling')
         # pool the output of encoder
         f_single_pooled = self.pooling1(f_single)
+        print(f'pooled fsingle: {f_single_pooled.shape}')
+        print('Entering Cross Attention...\n')
 
         # pass f_single and input2 through Cross attention layer
-        f_co = self.cross_attn(input2, f_single.unsqueeze(1), f_single.unsqueeze(1))
+        f_co = self.cross_attn(input2, f_single, f_single)
 
         # pool f_co
         f_co_pooled = self.pooling2(f_co)

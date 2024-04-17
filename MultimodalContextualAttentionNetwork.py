@@ -15,6 +15,11 @@ class MultimodalContextualAttention(nn.Module):
 
     def forward(self, text, visual):
 
+        print('Inside mcan')
+        print(f'Text: {text.shape}')
+        print(f'Image: {visual.shape}')
+        print('Entering Contextual Transformers\n')
+
         C_TI = self.text_transformer(text, visual)
 
         C_IT = self.visual_transformer(visual, text)
