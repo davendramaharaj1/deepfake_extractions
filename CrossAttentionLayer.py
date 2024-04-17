@@ -1,6 +1,6 @@
 import torch.nn as nn
 from torch.nn import MultiheadAttention, Linear, Dropout, LayerNorm
-import torch.nn.Functional as F
+import torch.nn.functional as F
 
 class CrossAttentionLayer(nn.Module):
     def __init__(self, d_model, nhead, dim_feedforward, dropout) -> None:
@@ -19,7 +19,6 @@ class CrossAttentionLayer(nn.Module):
         self.norm2 = LayerNorm(d_model)
 
         # Activation function
-        self.activation = ReLU
 
     def forward(self, query, key, value, key_padding_mask=None, need_weights=False):
         '''
@@ -61,7 +60,7 @@ class CrossAttentionLayer(nn.Module):
         print(f'Size of Query: {query.shape}')
 
         # Feedforward Network
-        ff_out = self.linear2(self.dropout(self.activation(self.linear1(query))))
+        ff_out = self.linear2(self.dropout(F.relu(self.linear1(query))))
 
         # Second Add + Norm Layer after feeedforward network
         ff_out = self.norm2(query + self.dropout(ff_out))
