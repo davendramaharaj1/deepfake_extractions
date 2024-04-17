@@ -5,7 +5,7 @@ from torchvision.models import resnet50
 
 class HierarchicalEncodingNetwork(nn.Module):
 
-    def __init__(self, mcan_model, bert, resnet, output_dim, groups=3) -> None:
+    def __init__(self, mcan_model, bert, resnet, groups=3) -> None:
         super(HierarchicalEncodingNetwork, self).__init__()
 
         self.bert = bert
@@ -20,9 +20,14 @@ class HierarchicalEncodingNetwork(nn.Module):
         # 2D Conv Layer to transform 2048 img features to 768
         # self.conv2d = nn.Conv2d(in_channels=)
 
-        self.output_dim = output_dim
+        self.output_dim = 2 * self.layer_groups * 768
 
-        self.classifier = nn.Linear(output_dim*groups, 2)
+        # self.classifier = nn.Linear(output_dim*groups, 2)
+
+        self.classifier = nn.Sequential(
+                        nn.Linear(self.output_dim, 2),
+                        nn.Softmax(dim=-1)
+                        )
 
 
     def forward(self, input_ids, attention_mask, images):
@@ -53,6 +58,7 @@ class HierarchicalEncodingNetwork(nn.Module):
 
         final_features = torch.cat(combined_outputs, dim=-1)
         predictions = self.classifier(final_features)
+
         return predictions
     
     def _group_bert_outputs(self, hidden_states):
